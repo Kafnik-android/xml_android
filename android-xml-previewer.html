@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android XML Previewer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .editor-panel {
+            flex: 0 0 45%;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #ddd;
+            background: #fff;
+        }
+
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+            overflow: auto;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 2px solid #ddd;
+            font-weight: 600;
+            font-size: 14px;
+            color: #222;
+            background: #fafafa;
+        }
+
+        .editor-content {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            font-family: 'Courier New', 'Monaco', monospace;
+            font-size: 13px;
+            resize: none;
+            background: #fff;
+            color: #222;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            background: #fffbf0;
+        }
+
+        .preview-content {
+            flex: 1;
+            padding: 24px;
+            overflow: auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            background: #f5f5f5;
+        }
+
+        .phone-frame {
+            width: 360px;
+            aspect-ratio: 9 / 19.5;
+            background: white;
+            border-radius: 40px;
+            border: 8px solid #111;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .phone-notch {
+            height: 28px;
+            background: #111;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .phone-screen {
+            flex: 1;
+            overflow: auto;
+            background: white;
+            padding: 0;
+        }
+
+        .android-container {
+            width: 100%;
+            padding: 12px;
+        }
+
+        .error-message {
+            padding: 16px;
+            background: #ffebee;
+            color: #c62828;
+            border-radius: 8px;
+            font-size: 12px;
+            margin: 12px;
+            border-left: 4px solid #c62828;
+            font-family: 'Courier New', monospace;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 2px solid #ddd;
+            background: #fafafa;
+            flex-wrap: wrap;
+        }
+
+        button, .settings-btn {
+            padding: 10px 20px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover, .settings-btn:hover {
+            background: #0052a3;
+        }
+
+        button:active, .settings-btn:active {
+            transform: scale(0.98);
+        }
+
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-panel.active {
+            display: flex;
+        }
+
+        .settings-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .settings-content h2 {
+            margin-bottom: 20px;
+            color: #222;
+            font-size: 18px;
+        }
+
+        .settings-group {
+            margin-bottom: 24px;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #222;
+            font-size: 13px;
+        }
+
+        .settings-group select,
+        .settings-group input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .settings-group input[type="range"] {
+            cursor: pointer;
+        }
+
+        .range-value {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button-row button {
+            flex: 1;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .button-row button.active {
+            background: #004a99;
+        }
+
+        .close-settings {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .close-settings button {
+            flex: 1;
+            background: #ccc;
+            color: #222;
+        }
+
+        .close-settings button:hover {
+            background: #bbb;
+        }
+
+        /* Android UI Elements Styling */
+        .android-textview {
+            padding: 8px;
+            font-size: 14px;
+            color: #000;
+            word-wrap: break-word;
+        }
+
+        .android-button {
+            padding: 10px 16px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 4px 0;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .android-button:hover {
+            background: #0052a3;
+        }
+
+        .android-button:active {
+            opacity: 0.8;
+        }
+
+        .android-edittext {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            font-family: inherit;
+            margin: 4px 0;
+        }
+
+        .android-edittext:focus {
+            border-color: #0066cc;
+            outline: none;
+        }
+
+        .android-linear-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .android-linear-layout.horizontal {
+            flex-direction: row;
+        }
+
+        .android-frame-layout {
+            position: relative;
+            width: 100%;
+        }
+
+        .android-checkbox,
+        .android-radiobutton {
+            margin: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .android-checkbox input,
+        .android-radiobutton input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .android-progressbar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .android-progressbar-bar {
+            height: 100%;
+            background: #0066cc;
+            border-radius: 2px;
+        }
+
+        .android-imageview {
+            max-width: 100%;
+            height: auto;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .editor-panel {
+                flex: 0 0 50vh;
+                border-right: none;
+                border-bottom: 2px solid #ddd;
+            }
+
+            .preview-panel {
+                flex: 1;
+                min-height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-panel">
+            <div class="panel-header">📝 XML Разметка</div>
+            <div class="editor-content">
+                <textarea id="xmlInput" spellcheck="false"><?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Добро пожаловать!"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Нажми меня" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Введи своё имя"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout></textarea>
+            </div>
+            <div class="button-group">
+                <button onclick="parseAndRender()">✨ Рендер</button>
+                <button onclick="clearXML()">🗑️ Очистить</button>
+            </div>
+        </div>
+
+        <div class="preview-panel">
+            <div class="panel-header">
+                📱 Превью
+                <span style="float: right; cursor: pointer; user-select: none;" onclick="openSettings()" title="Настройки">⚙️</span>
+            </div>
+            <div class="preview-content" id="previewContent">
+                <div class="phone-frame" id="phoneFrame">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen">
+                        <div id="preview" class="android-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-content">
+            <h2>⚙️ Настройки телефона</h2>
+
+            <div class="settings-group">
+                <label>Ориентация</label>
+                <div class="button-row">
+                    <button class="active" onclick="setOrientation('portrait')">📱 Портрет</button>
+                    <button onclick="setOrientation('landscape')">📺 Ландшафт</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label>Размер экрана</label>
+                <select onchange="setPhoneSize(this.value)">
+                    <option value="small">Малый (320px)</option>
+                    <option value="normal" selected>Обычный (360px)</option>
+                    <option value="large">Большой (420px)</option>
+                    <option value="xlarge">Очень большой (480px)</option>
+                </select>
+            </div>
+
+            <div class="settings-group">
+                <label>Масштаб</label>
+                <input type="range" id="scaleSlider" min="50" max="150" value="100" onchange="setScale(this.value)">
+                <div class="range-value"><span id="scaleValue">100</span>%</div>
+            </div>
+
+            <div class="settings-group">
+                <label>Фон экрана</label>
+                <select onchange="setScreenBackground(this.value)">
+                    <option value="white" selected>Белый</option>
+                    <option value="light-gray">Светло-серый</option>
+                    <option value="dark">Тёмный</option>
+                    <option value="custom">#f0f0f0</option>
+                </select>
+            </div>
+
+            <div class="close-settings">
+                <button onclick="closeSettings()">✓ Готово</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        let phoneSettings = {
+            orientation: 'portrait',
+            size: 'normal',
+            scale: 100,
+            background: 'white'
+        };
+
+        const phoneSizes = {
+            small: { width: 320, height: 620 },
+            normal: { width: 360, height: 760 },
+            large: { width: 420, height: 880 },
+            xlarge: { width: 480, height: 1000 }
+        };
+
+        function openSettings() {
+            document.getElementById('settingsPanel').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsPanel').classList.remove('active');
+        }
+
+        function setOrientation(orientation) {
+            phoneSettings.orientation = orientation;
+            applyPhoneSettings();
+            
+            document.querySelectorAll('.button-row button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function setPhoneSize(size) {
+            phoneSettings.size = size;
+            applyPhoneSettings();
+        }
+
+        function setScale(scale) {
+            phoneSettings.scale = scale;
+            document.getElementById('scaleValue').textContent = scale;
+            applyPhoneSettings();
+        }
+
+        function setScreenBackground(bg) {
+            phoneSettings.background = bg;
+            applyPhoneSettings();
+        }
+
+        function applyPhoneSettings() {
+            const phoneFrame = document.getElementById('phoneFrame');
+            const previewContent = document.getElementById('previewContent');
+            const size = phoneSizes[phoneSettings.size];
+            
+            let width = size.width;
+            let height = size.height;
+            
+            if (phoneSettings.orientation === 'landscape') {
+                [width, height] = [height, width];
+            }
+            
+            phoneFrame.style.width = width + 'px';
+            phoneFrame.style.aspectRatio = `${width} / ${height}`;
+            
+            const scale = phoneSettings.scale / 100;
+            phoneFrame.style.transform = `scale(${scale})`;
+            phoneFrame.style.transformOrigin = 'top center';
+            
+            const phoneScreen = phoneFrame.querySelector('.phone-screen');
+            const bgMap = {
+                'white': '#ffffff',
+                'light-gray': '#f5f5f5',
+                'dark': '#1a1a1a',
+                'custom': '#f0f0f0'
+            };
+            
+            phoneScreen.style.backgroundColor = bgMap[phoneSettings.background] || '#ffffff';
+            
+            // Adjust padding based on orientation
+            if (phoneSettings.orientation === 'landscape') {
+                previewContent.style.alignItems = 'center';
+            } else {
+                previewContent.style.alignItems = 'flex-start';
+            }
+        }
+
+        function parseAndRender() {
+            const xmlText = document.getElementById('xmlInput').value;
+            const preview = document.getElementById('preview');
+
+            try {
+                preview.innerHTML = '';
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    throw new Error('Ошибка в XML формате');
+                }
+
+                const root = xmlDoc.documentElement;
+                const element = renderElement(root);
+                if (element) {
+                    preview.appendChild(element);
+                }
+            } catch (error) {
+                preview.innerHTML = `<div class="error-message">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+
+        function renderElement(xmlElement) {
+            if (xmlElement.nodeType === Node.TEXT_NODE) {
+                return null;
+            }
+
+            const tagName = xmlElement.tagName.split('}').pop();
+            const attrs = getAttributes(xmlElement);
+            let element;
+
+            switch (tagName) {
+                case 'LinearLayout':
+                    element = document.createElement('div');
+                    element.className = `android-linear-layout ${attrs['android:orientation'] === 'horizontal' ? 'horizontal' : ''}`;
+                    applyLayout(element, attrs);
+                    break;
+
+                case 'FrameLayout':
+                    element = document.createElement('div');
+                    element.className = 'android-frame-layout';
+                    applyLayout(element, attrs);
+                    break;
+
+                case 'TextView':
+                    element = document.createElement('div');
+                    element.className = 'android-textview';
+                    element.textContent = attrs['android:text'] || '';
+                    if (attrs['android:textSize']) {
+                        element.style.fontSize = convertDpToPixels(attrs['android:textSize']);
+                    }
+                    if (attrs['android:textColor']) {
+                        element.style.color = attrs['android:textColor'];
+                    }
+                    applyLayout(element, attrs);
+                    break;
+
+                case 'Button':
+                    element = document.createElement('button');
+                    element.className = 'android-button';
+                    element.textContent = attrs['android:text'] || 'Button';
+                    element.onclick = function(e) { e.preventDefault(); };
+                    applyLayout(element, attrs);
+                    break;
+
+                case 'EditText':
+                    element = document.createElement('input');
+                    element.className = 'android-edittext';
+                    element.type = 'text';
+                    element.placeholder = attrs['android:hint'] || '';
+                    applyLayout(element, attrs);
+                    break;
+
+                case 'CheckBox':
+                    element = document.createElement('label');
+                    element.className = 'android-checkbox';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    element.appendChild(checkbox);
+                    element.appendChild(document.createTextNode(attrs['android:text'] || 'CheckBox'));
+                    applyLayout(element, attrs);
+                    return element;
+
+                case 'RadioButton':
+                    element = document.createElement('label');
+                    element.className = 'android-radiobutton';
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    element.appendChild(radio);
+                    element.appendChild(document.createTextNode(attrs['android:text'] || 'RadioButton'));
+                    applyLayout(element, attrs);
+                    return element;
+
+                case 'ImageView':
+                    element = document.createElement('img');
+                    element.className = 'android-imageview';
+                    element.src = attrs['android:src'] || '';
+                    element.alt = attrs['android:contentDescription'] || 'Image';
+                    applyLayout(element, attrs);
+                    break;
+
+                case 'ProgressBar':
+                    element = document.createElement('div');
+                    element.className = 'android-progressbar';
+                    const bar = document.createElement('div');
+                    bar.className = 'android-progressbar-bar';
+                    bar.style.width = (attrs['android:progress'] || 50) + '%';
+                    element.appendChild(bar);
+                    applyLayout(element, attrs);
+                    break;
+
+                default:
+                    element = document.createElement('div');
+                    applyLayout(element, attrs);
+            }
+
+            // Add children
+            for (let child of xmlElement.childNodes) {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    const childElement = renderElement(child);
+                    if (childElement) {
+                        element.appendChild(childElement);
+                    }
+                }
+            }
+
+            return element;
+        }
+
+        function getAttributes(xmlElement) {
+            const attrs = {};
+            for (let attr of xmlElement.attributes) {
+                attrs[attr.name] = attr.value;
+            }
+            return attrs;
+        }
+
+        function applyLayout(element, attrs) {
+            const width = attrs['android:layout_width'] || attrs['android:width'];
+            const height = attrs['android:layout_height'] || attrs['android:height'];
+
+            if (width === 'match_parent') {
+                element.style.width = '100%';
+            } else if (width && width !== 'wrap_content') {
+                element.style.width = convertDpToPixels(width);
+            }
+
+            if (height && height !== 'wrap_content') {
+                element.style.height = convertDpToPixels(height);
+            }
+
+            const padding = attrs['android:padding'];
+            if (padding) {
+                element.style.padding = convertDpToPixels(padding);
+            }
+
+            const marginTop = attrs['android:layout_marginTop'];
+            if (marginTop) {
+                element.style.marginTop = convertDpToPixels(marginTop);
+            }
+
+            const marginBottom = attrs['android:layout_marginBottom'];
+            if (marginBottom) {
+                element.style.marginBottom = convertDpToPixels(marginBottom);
+            }
+
+            const marginLeft = attrs['android:layout_marginLeft'];
+            if (marginLeft) {
+                element.style.marginLeft = convertDpToPixels(marginLeft);
+            }
+
+            const marginRight = attrs['android:layout_marginRight'];
+            if (marginRight) {
+                element.style.marginRight = convertDpToPixels(marginRight);
+            }
+
+            const margin = attrs['android:layout_margin'];
+            if (margin) {
+                element.style.margin = convertDpToPixels(margin);
+            }
+
+            const background = attrs['android:background'];
+            if (background) {
+                element.style.background = background.startsWith('#') ? background : '#' + background;
+            }
+        }
+
+        function convertDpToPixels(value) {
+            if (!value) return '0';
+            const num = parseFloat(value);
+            const unit = value.replace(/[0-9.-]/g, '');
+
+            switch (unit) {
+                case 'dp':
+                case 'dip':
+                    return (num * 2) + 'px';
+                case 'sp':
+                    return (num * 2) + 'px';
+                case 'px':
+                    return num + 'px';
+                default:
+                    return value;
+            }
+        }
+
+        function clearXML() {
+            document.getElementById('xmlInput').value = '';
+            document.getElementById('preview').innerHTML = '';
+        }
+
+        // Auto-render on load
+        window.addEventListener('load', parseAndRender);
+
+        // Render on textarea change with debounce
+        let renderTimeout;
+        document.getElementById('xmlInput').addEventListener('input', () => {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(parseAndRender, 800);
+        });
+
+        // Close settings on outside click
+        document.getElementById('settingsPanel').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
+
+        // Keyboard shortcut to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSettings();
+            }
+        });
+    </script>
+</body>
+</html>
