@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -88,7 +89,7 @@
             background: white;
             border-radius: 40px;
             border: 8px solid #111;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -106,11 +107,22 @@
             overflow: auto;
             background: white;
             padding: 0;
+            display: flex;
+            /* Добавь эту строчку */
+            flex-direction: column;
+            /* Добавь эту строчку */
         }
 
         .android-container {
             width: 100%;
-            padding: 12px;
+            height: 100%;
+            /* Добавь эту строчку */
+            padding: 0;
+            /* Измени с 12px на 0, чтобы отступы регулировались только из XML */
+            display: flex;
+            /* Добавь эту строчку */
+            flex-direction: column;
+            /* Добавь эту строчку */
         }
 
         .error-message {
@@ -133,7 +145,8 @@
             flex-wrap: wrap;
         }
 
-        button, .settings-btn {
+        button,
+        .settings-btn {
             padding: 10px 20px;
             background: #0066cc;
             color: white;
@@ -145,11 +158,13 @@
             transition: background 0.2s;
         }
 
-        button:hover, .settings-btn:hover {
+        button:hover,
+        .settings-btn:hover {
             background: #0052a3;
         }
 
-        button:active, .settings-btn:active {
+        button:active,
+        .settings-btn:active {
             transform: scale(0.98);
         }
 
@@ -160,7 +175,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -176,7 +191,7 @@
             padding: 24px;
             max-width: 400px;
             width: 90%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
 
         .settings-content h2 {
@@ -358,6 +373,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="editor-panel">
@@ -400,7 +416,8 @@
         <div class="preview-panel">
             <div class="panel-header">
                 📱 Превью
-                <span style="float: right; cursor: pointer; user-select: none;" onclick="openSettings()" title="Настройки">⚙️</span>
+                <span style="float: right; cursor: pointer; user-select: none;" onclick="openSettings()"
+                    title="Настройки">⚙️</span>
             </div>
             <div class="preview-content" id="previewContent">
                 <div class="phone-frame" id="phoneFrame">
@@ -484,7 +501,7 @@
         function setOrientation(orientation) {
             phoneSettings.orientation = orientation;
             applyPhoneSettings();
-            
+
             document.querySelectorAll('.button-row button').forEach(btn => {
                 btn.classList.remove('active');
             });
@@ -511,21 +528,21 @@
             const phoneFrame = document.getElementById('phoneFrame');
             const previewContent = document.getElementById('previewContent');
             const size = phoneSizes[phoneSettings.size];
-            
+
             let width = size.width;
             let height = size.height;
-            
+
             if (phoneSettings.orientation === 'landscape') {
                 [width, height] = [height, width];
             }
-            
+
             phoneFrame.style.width = width + 'px';
             phoneFrame.style.aspectRatio = `${width} / ${height}`;
-            
+
             const scale = phoneSettings.scale / 100;
             phoneFrame.style.transform = `scale(${scale})`;
             phoneFrame.style.transformOrigin = 'top center';
-            
+
             const phoneScreen = phoneFrame.querySelector('.phone-screen');
             const bgMap = {
                 'white': '#ffffff',
@@ -533,9 +550,9 @@
                 'dark': '#1a1a1a',
                 'custom': '#f0f0f0'
             };
-            
+
             phoneScreen.style.backgroundColor = bgMap[phoneSettings.background] || '#ffffff';
-            
+
             // Adjust padding based on orientation
             if (phoneSettings.orientation === 'landscape') {
                 previewContent.style.alignItems = 'center';
@@ -606,7 +623,7 @@
                     element = document.createElement('button');
                     element.className = 'android-button';
                     element.textContent = attrs['android:text'] || 'Button';
-                    element.onclick = function(e) { e.preventDefault(); };
+                    element.onclick = function (e) { e.preventDefault(); };
                     applyLayout(element, attrs);
                     break;
 
@@ -692,7 +709,10 @@
                 element.style.width = convertDpToPixels(width);
             }
 
-            if (height && height !== 'wrap_content') {
+            if (height === 'match_parent') {
+                element.style.height = '100%';
+                element.style.minHeight = '100%';
+            } else if (height && height !== 'wrap_content') {
                 element.style.height = convertDpToPixels(height);
             }
 
@@ -766,18 +786,19 @@
         });
 
         // Close settings on outside click
-        document.getElementById('settingsPanel').addEventListener('click', function(e) {
+        document.getElementById('settingsPanel').addEventListener('click', function (e) {
             if (e.target === this) {
                 closeSettings();
             }
         });
 
         // Keyboard shortcut to close
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeSettings();
             }
         });
     </script>
 </body>
+
 </html>
